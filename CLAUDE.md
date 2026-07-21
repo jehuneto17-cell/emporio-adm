@@ -29,6 +29,23 @@ O app mobile do cliente existe em paralelo (`C:\Projetos\Apps\Loja Virtual\Empor
 
 ---
 
+## Git
+
+```
+Git: SIM. Repositório no GitHub: https://github.com/jehuneto17-cell/emporio-adm
+Branch principal: main
+```
+
+**Workflow obrigatório:** todo prompt de alteração neste projeto deve terminar com:
+```bash
+git add -A
+git commit -m "descrição da mudança"
+git push origin main
+```
+(mesmo padrão já usado no projeto irmão, `emporio-app`)
+
+---
+
 ## Firebase
 
 ```
@@ -261,6 +278,7 @@ function App() {
 
 | Data | O que foi feito |
 |------|----------------|
+| 2026-07-20 | Projeto versionado no GitHub pela primeira vez (repositório privado descartado a favor de público, após varredura de segurança confirmar ausência de credenciais sensíveis). Histórico local anterior preservado. A partir de agora, todo prompt de alteração deve finalizar com commit + push. |
 | 2026-06-01 | Criação de `firebase-config.js`, `auth-guard.js`, `login.html`. Auth-guard adicionado nos 12 HTMLs |
 | 2026-06-01 | `responsive.css` criado. Viewports corrigidos. Firestore SDK e `firestore.js` adicionados. `shared.jsx` corrigido (logout, links, user). `app.jsx` e `dashboard-app.jsx` conectados ao Firestore |
 | 2026-06-01 | `CLAUDE.md` criado |
