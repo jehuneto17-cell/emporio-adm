@@ -4,9 +4,23 @@
   <meta charset="UTF-8" />
   <meta http-equiv="refresh" content="0; url=login.html" />
   <title>Empório Coisas de Minas — Painel Admin</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#52170c" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png" />
 </head>
 <body>
   <p>Redirecionando...</p>
   <script>window.location.replace('login.html');</script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch((e) => {
+          console.warn('[PWA] falha ao registrar service worker:', e.message);
+        });
+      });
+    }
+  </script>
 </body>
 </html>

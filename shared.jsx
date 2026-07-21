@@ -262,3 +262,11 @@ function StatusBadge({ status }) {
 }
 
 Object.assign(window, { Dropdown, StatusBadge });
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((e) => {
+      console.warn('[PWA] falha ao registrar service worker:', e.message);
+    });
+  });
+}

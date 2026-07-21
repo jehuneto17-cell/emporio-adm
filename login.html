@@ -4,6 +4,11 @@
 <meta charset="utf-8" />
 <title>Empório Coisas de Minas — Painel Admin</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="manifest" href="/manifest.json" />
+<meta name="theme-color" content="#52170c" />
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -419,6 +424,15 @@
       'auth/network-request-failed': 'Erro de conexão. Verifique sua internet.'
     };
     return erros[code] || 'Erro ao fazer login. Tente novamente.';
+  }
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch((e) => {
+        console.warn('[PWA] falha ao registrar service worker:', e.message);
+      });
+    });
   }
 </script>
 </body>

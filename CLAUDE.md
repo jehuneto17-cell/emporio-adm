@@ -362,3 +362,4 @@ function App() {
 | 2026-07-20 | estoque-app.jsx: removido padrão frágil window.stockItemsRef (dados agora passados via props para EntryModal); implementada paginação real (PAGE_SIZE=20), seguindo o mesmo padrão já usado em pedidos-app.jsx/clientes-app.jsx/cupons-app.jsx. |
 | 2026-07-20 | shared.jsx: adicionado window.THEME com a cor primária centralizada (#964904); todas as ocorrências hardcoded dessa cor nos arquivos *-app.jsx (mais app.jsx e charts.jsx) substituídas por window.THEME.primary, facilitando manutenção futura da identidade visual. |
 | 2026-07-21 | Adicionado index.html na raiz do projeto, redirecionando automaticamente para login.html — resolve erro 404 ao acessar a URL raiz do domínio publicado no Vercel. |
+| 2026-07-21 | Adicionado suporte a PWA: manifest.json, service worker (sw.js, estratégia network-first), ícones (icons/) e meta tags em todas as páginas HTML. Painel agora é instalável como app. |
