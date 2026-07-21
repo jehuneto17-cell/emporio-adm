@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\Projetos\\\\Apps\\\\Loja Virtual\\\\Emporio Coisas de Minas\\\\adm coisas de minas\" -Filter \"*.html\")",
+      "Bash(Select-Object Name)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Projetos\" -Recurse -Include \"*.js\",\"*.json\",\"*.env\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-String -Pattern \"firebaseConfig|apiKey|emporio\" -List)",
+      "Bash(Select-Object -First 20 Path)",
+      "Read(//c/Projetos/Apps/Loja Virtual/Emporio Coisas de Minas/emporio-app/src/services/**)",
+      "Read(//c/Projetos/Apps/Loja Virtual/Emporio Coisas de Minas/emporio-app/src/**)"
+    ]
+  }
+}

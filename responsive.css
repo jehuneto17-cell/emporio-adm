@@ -1,0 +1,98 @@
+/* ── Responsividade do Painel Admin ───────────────────────────────────────────
+   O painel ocupa 100% da largura da tela em qualquer resolução.
+   Sidebar colapsa progressivamente em telas menores.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Garante que o stage nunca fique limitado por largura */
+.stage {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+}
+
+/* Body e html sempre com fundo da paleta — sem letterbox escuro */
+html, body {
+  background: var(--bg, #fcf9f5) !important;
+}
+
+/* ── Sidebar: comprime em telas menores ──────────────────────────────────── */
+
+/* Laptop padrão (< 1280px): sidebar um pouco mais estreita */
+@media (max-width: 1280px) {
+  :root { --sidebar-w: 200px; }
+
+  .sidebar { width: var(--sidebar-w) !important; }
+
+  /* Empurra o conteúdo principal junto com a sidebar */
+  .stage > div[style*="240"],
+  .stage > div[style*="marginLeft: 240"] {
+    margin-left: var(--sidebar-w) !important;
+  }
+
+  main[style*="padding: 32"] {
+    padding: 24px !important;
+  }
+}
+
+/* Tablet / laptop pequeno (< 1024px): sidebar colapsa para só ícones */
+@media (max-width: 1024px) {
+  :root { --sidebar-w: 64px; }
+
+  .sidebar { width: var(--sidebar-w) !important; }
+
+  /* Oculta textos e labels da sidebar */
+  .nav-item span:not(.bell-dot),
+  .sidebar .h-jakarta,
+  .sidebar div[style*="lineHeight"],
+  .sidebar div[style*="color: #ffb4a5"][style*="font-size: 11"],
+  .sidebar div[style*="color: #c98477"],
+  .sidebar > div:first-child > div > div:last-child {
+    display: none !important;
+  }
+
+  .nav-item {
+    justify-content: center;
+    padding: 0 !important;
+  }
+
+  /* Remove badge de pedidos no menu colapsado */
+  .nav-item > span[style*="background: #d8a360"] {
+    display: none !important;
+  }
+
+  /* Footer do usuário colapsado */
+  .sidebar > div:last-child {
+    padding: 10px 8px !important;
+  }
+  .sidebar > div:last-child > div {
+    justify-content: center;
+  }
+  .sidebar > div:last-child > div > div:not(:first-child) {
+    display: none !important;
+  }
+
+  .stage > div[style*="240"],
+  .stage > div[style*="marginLeft: 240"] {
+    margin-left: var(--sidebar-w) !important;
+  }
+}
+
+/* ── Aviso para telas muito pequenas (< 760px) ───────────────────────────── */
+.mobile-warning {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: #52170c;
+  color: #fff7ec;
+  font-family: 'Work Sans', sans-serif;
+  font-size: 16px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 32px;
+  z-index: 9999;
+}
+
+@media (max-width: 760px) {
+  .mobile-warning { display: flex; flex-direction: column; gap: 16px; }
+}

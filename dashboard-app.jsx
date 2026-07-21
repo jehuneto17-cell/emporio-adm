@@ -103,9 +103,9 @@ function Card({ title, sub, right, children, footer, pad = 24 }) {
 
 function LinkBtn({ children, href = '#' }) {
   return (
-    <a href={href} style={{ fontSize: 13, fontWeight: 600, color: '#964904', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+    <a href={href} style={{ fontSize: 13, fontWeight: 600, color: window.THEME.primary, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
       onMouseEnter={e => e.currentTarget.style.color = '#fe9b55'}
-      onMouseLeave={e => e.currentTarget.style.color = '#964904'}>
+      onMouseLeave={e => e.currentTarget.style.color = window.THEME.primary}>
       {children} <IconChevronRight size={14} />
     </a>
   );
@@ -195,7 +195,7 @@ function App() {
 
           {/* Metrics */}
           <div style={{ display: 'flex', gap: 18, marginBottom: 22 }}>
-            <Metric icon={IconMoney} iconBg="#fdddc8" iconColor="#964904"
+            <Metric icon={IconMoney} iconBg="#fdddc8" iconColor={window.THEME.primary}
               value={loading ? '—' : fmtBRL(metrics.faturamento)}
               label={`faturamento — ${period}`} />
             <Metric icon={IconOrders} iconBg="#e3f1e3" iconColor="#2e7d32"
@@ -292,7 +292,7 @@ function App() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 22, paddingBottom: 16 }}>
                 <div className="card" style={{ padding: 22 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                    <div style={{ width: 38, height: 38, borderRadius: 10, background: '#fdddc8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><IconBox size={18} color="#964904" /></div>
+                    <div style={{ width: 38, height: 38, borderRadius: 10, background: '#fdddc8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><IconBox size={18} color={window.THEME.primary} /></div>
                     <div className="h-jakarta" style={{ fontSize: 14, fontWeight: 700, color: '#52170c' }}>Produtos</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>

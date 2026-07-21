@@ -1,0 +1,6 @@
+*.json.backup
+*-token.json
+*-backup.json
+node_modules/
+.env
+*.local

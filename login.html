@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Empório Coisas de Minas — Painel Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="firebase-config.js"></script>
+
+<style>
+  :root {
+    --primary: #964904;
+    --primary-hover: #b85c05;
+    --sidebar: #52170c;
+    --accent: #d8a360;
+    --bg: #fcf9f5;
+    --border: #dac1bc;
+    --text: #1c1c1a;
+    --text-2: #54433f;
+    --muted: #87726e;
+    --error: #ba1a1a;
+    --error-soft: #fbdedc;
+    --success: #2e7d32;
+    --success-soft: #e3f1e3;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    font-family: 'Work Sans', system-ui, sans-serif;
+    background: var(--sidebar);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(216,163,96,0.18) 0%, transparent 70%),
+      var(--sidebar);
+  }
+
+  .card {
+    background: var(--bg);
+    border-radius: 24px;
+    padding: 48px 44px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.35);
+  }
+
+  /* Logo */
+  .logo-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+
+  .logo-icon {
+    width: 72px;
+    height: 72px;
+    background: var(--accent);
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(216,163,96,0.4);
+  }
+
+  .logo-icon span {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 44px;
+    font-weight: 800;
+    color: var(--sidebar);
+    line-height: 1;
+    margin-top: 4px;
+  }
+
+  .logo-text {
+    text-align: center;
+  }
+
+  .logo-text h1 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .logo-text p {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    margin-top: 4px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin-bottom: 28px;
+    opacity: 0.6;
+  }
+
+  /* Form */
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-2);
+    letter-spacing: 0.01em;
+  }
+
+  .input-wrap {
+    position: relative;
+  }
+
+  input[type="email"],
+  input[type="password"],
+  input[type="text"] {
+    width: 100%;
+    height: 46px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    padding: 0 14px;
+    font: inherit;
+    font-size: 15px;
+    color: var(--text);
+    background: #fff;
+    outline: none;
+    transition: border 0.15s, box-shadow 0.15s;
+  }
+
+  input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(150,73,4,0.12);
+  }
+
+  input::placeholder { color: var(--muted); }
+
+  input[type="password"],
+  .has-toggle input {
+    padding-right: 46px;
+  }
+
+  .toggle-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    transition: color 0.15s;
+  }
+
+  .toggle-btn:hover { color: var(--primary); }
+
+  /* Botão principal */
+  .btn-submit {
+    width: 100%;
+    height: 48px;
+    border-radius: 10px;
+    border: none;
+    background: var(--primary);
+    color: #fff;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background 0.15s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn-submit:hover { background: var(--primary-hover); }
+  .btn-submit:active { transform: scale(0.99); }
+  .btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Spinner */
+  .spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Mensagens */
+  .msg {
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13.5px;
+    font-weight: 500;
+    display: none;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 14px;
+    line-height: 1.45;
+  }
+
+  .msg.show { display: flex; }
+  .msg.error { background: var(--error-soft); color: var(--error); }
+  .msg.success { background: var(--success-soft); color: var(--success); }
+
+  .msg svg { flex-shrink: 0; margin-top: 1px; }
+
+  /* Footer */
+  .card-footer {
+    margin-top: 28px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="card">
+    <div class="logo-wrap">
+      <div class="logo-icon">
+        <span>e</span>
+      </div>
+      <div class="logo-text">
+        <h1>Empório Coisas de Minas</h1>
+        <p>Painel Admin</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <form id="login-form" novalidate>
+      <div class="form-group">
+        <label for="email">E-mail</label>
+        <div class="input-wrap">
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="seu@email.com"
+            autocomplete="email"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Senha</label>
+        <div class="input-wrap has-toggle">
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="••••••••"
+            autocomplete="current-password"
+            required
+          />
+          <button type="button" class="toggle-btn" id="toggle-pw" aria-label="Mostrar/ocultar senha">
+            <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit" id="btn-submit">
+        <span id="btn-text">Entrar no painel</span>
+      </button>
+
+      <div class="msg error" id="msg-error" role="alert">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span id="msg-error-text"></span>
+      </div>
+    </form>
+
+    <div class="card-footer">
+      Acesso restrito a administradores autorizados.
+    </div>
+  </div>
+</div>
+
+<script>
+  var ADMIN_EMAIL = 'emporiominas00@gmail.com';
+
+  // Se já estiver logado como admin, redireciona direto
+  firebase.auth().onAuthStateChanged(function(user) {
+    if (user && user.email === ADMIN_EMAIL) {
+      window.location.replace('Dashboard.html');
+    }
+  });
+
+  // Verificar parâmetro de erro na URL
+  (function() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('erro') === 'acesso-negado') {
+      showError('Esta conta não tem permissão de acesso ao painel admin.');
+    }
+  })();
+
+  // Toggle mostrar/ocultar senha
+  var pwInput = document.getElementById('password');
+  var toggleBtn = document.getElementById('toggle-pw');
+  var eyeIcon = document.getElementById('eye-icon');
+
+  var eyeOpen = '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>';
+  var eyeClosed = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-10-8-10-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+
+  toggleBtn.addEventListener('click', function() {
+    var isPassword = pwInput.type === 'password';
+    pwInput.type = isPassword ? 'text' : 'password';
+    eyeIcon.innerHTML = isPassword ? eyeClosed : eyeOpen;
+  });
+
+  // Submit
+  var form = document.getElementById('login-form');
+  var btnSubmit = document.getElementById('btn-submit');
+  var btnText = document.getElementById('btn-text');
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    hideError();
+
+    var email = document.getElementById('email').value.trim();
+    var password = document.getElementById('password').value;
+
+    if (!email) { showError('Informe o e-mail.'); return; }
+    if (!password) { showError('Informe a senha.'); return; }
+
+    setLoading(true);
+
+    firebase.auth().signInWithEmailAndPassword(email, password)
+      .then(function(cred) {
+        if (cred.user.email !== ADMIN_EMAIL) {
+          return firebase.auth().signOut().then(function() {
+            setLoading(false);
+            showError('Esta conta não tem permissão de acesso ao painel admin.');
+          });
+        }
+        // Login OK — redireciona
+        window.location.replace('Dashboard.html');
+      })
+      .catch(function(err) {
+        setLoading(false);
+        showError(traduzirErro(err.code));
+      });
+  });
+
+  function setLoading(on) {
+    btnSubmit.disabled = on;
+    btnText.textContent = on ? '' : 'Entrar no painel';
+    if (on) {
+      var spinner = document.createElement('div');
+      spinner.className = 'spinner';
+      spinner.id = 'spinner';
+      btnSubmit.appendChild(spinner);
+    } else {
+      var s = document.getElementById('spinner');
+      if (s) s.remove();
+    }
+  }
+
+  function showError(msg) {
+    var el = document.getElementById('msg-error');
+    document.getElementById('msg-error-text').textContent = msg;
+    el.classList.add('show');
+  }
+
+  function hideError() {
+    document.getElementById('msg-error').classList.remove('show');
+  }
+
+  function traduzirErro(code) {
+    var erros = {
+      'auth/invalid-email':        'E-mail inválido.',
+      'auth/user-not-found':       'Nenhuma conta encontrada com este e-mail.',
+      'auth/wrong-password':       'Senha incorreta. Tente novamente.',
+      'auth/invalid-credential':   'E-mail ou senha incorretos.',
+      'auth/too-many-requests':    'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
+      'auth/user-disabled':        'Esta conta foi desativada.',
+      'auth/network-request-failed': 'Erro de conexão. Verifique sua internet.'
+    };
+    return erros[code] || 'Erro ao fazer login. Tente novamente.';
+  }
+</script>
+</body>
+</html>
