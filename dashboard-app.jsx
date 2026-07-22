@@ -40,9 +40,13 @@ function buildChartData(allPedidos, period) {
   const result = [];
   for (let i = days - 1; i >= 0; i--) {
     const day = new Date(today); day.setDate(today.getDate() - i);
-    const key = `${String(day.getDate()).padStart(2,'0')}/${String(day.getMonth()+1).padStart(2,'0')}/${day.getFullYear()}`;
+    const dayStart = new Date(day); dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(day); dayEnd.setHours(23, 59, 59, 999);
     const value = allPedidos
-      .filter(o => o.date === key && o.status !== 'Cancelado')
+      .filter(o => {
+        const d = parseDateBR(o.date);
+        return d && d >= dayStart && d <= dayEnd && o.status !== 'Cancelado';
+      })
       .reduce((s, o) => s + (o.total || 0), 0);
     const label = period === '7 dias' ? DAYS_SHORT[day.getDay()] : String(day.getDate());
     result.push({ value, label, today: i === 0 });
