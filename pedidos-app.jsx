@@ -387,8 +387,9 @@ function App() {
   const counts = useMemo(() => {
     const c = { Todos: orders.length };
     ORDER_STATUSES.forEach(s => c[s] = orders.filter(o => o.status === s).length);
+    c['Arquivados'] = archivedOrders.length;
     return c;
-  }, [orders]);
+  }, [orders, archivedOrders]);
 
   const filtered = useMemo(() => {
     if (tab === 'Arquivados') {
