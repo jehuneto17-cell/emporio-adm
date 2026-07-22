@@ -155,6 +155,41 @@
     }
   }
 
+  async function getPedidosArquivados() {
+    try {
+      var snap = await db.collection('pedidos').orderBy('createdAt', 'desc').limit(50).get();
+      var mapped = snap.docs.map(function (doc) {
+        var d = doc.data();
+        return {
+          id: doc.id,
+          uid: d.uid || null,
+          number: d.number || doc.id,
+          customer: String(d.customer || ''),
+          initials: String(d.initials || ''),
+          tint: d.tint || '#a85a32',
+          city: String(d.city || ''),
+          total: d.total || 0,
+          // d.items pode ser um array (novo app) ou um número (legado).
+          // Normalizamos sempre para o count numérico que o painel exibe.
+          items: Array.isArray(d.items) ? d.items.length : (d.items || 0),
+          date: d.createdAt ? tsToDate(d.createdAt) : (d.date || ''),
+          time: d.createdAt ? tsToTime(d.createdAt) : (d.time || ''),
+          status: String(d.status || 'Aguardando pagamento'),
+          payment: String(d.payment || ''),
+          shipping: String(d.shipping || ''),
+          freight: d.freight || 0,
+          products: Array.isArray(d.products) ? d.products : [],
+          address: d.address || {},
+          arquivado: !!d.arquivado,
+        };
+      });
+      return mapped.filter(function(o) { return o.arquivado; });
+    } catch (e) {
+      console.warn('[DB.getPedidosArquivados]', e.code || e.message);
+      return [];
+    }
+  }
+
   async function getPedido(id) {
     try {
       var doc = await db.collection('pedidos').doc(id).get();
@@ -709,6 +744,7 @@
     deleteProduto:        deleteProduto,
     updateEstoqueProduto: updateEstoqueProduto,
     getPedidos:           getPedidos,
+    getPedidosArquivados: getPedidosArquivados,
     getPedido:            getPedido,
     addPedido:            addPedido,
     updatePedido:         updatePedido,

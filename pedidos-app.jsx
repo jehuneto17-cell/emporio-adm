@@ -24,7 +24,7 @@ function MiniMetric({ label, value, tone }) {
 const STEPS = ['Pago','Preparando','Em trânsito','Entregue'];
 const STEPS_LABELS = ['Pagamento\nConfirmado','Preparando','Em trânsito','Entregue'];
 
-function OrderDrawer({ order, onClose, onStatusChange, onArchive }) {
+function OrderDrawer({ order, onClose, onStatusChange, onArchive, onUnarchive, isArchived }) {
   if (!order) return null;
   const products = Array.isArray(order.products) ? order.products : [];
   const subtotal = products.reduce((s,p) => s + (p.p || 0) * (p.q || 1), 0);
@@ -143,13 +143,23 @@ function OrderDrawer({ order, onClose, onStatusChange, onArchive }) {
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
             <a href={`Detalhe do Pedido.html?id=${order.id}`} className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', textDecoration: 'none', height: 36, fontSize: 13 }}>Ver detalhe completo <IconChevronRight size={13} /></a>
-            <button
-              className="btn btn-outline"
-              style={{ height: 36, paddingInline: 14, fontSize: 13, color: '#87726e', borderColor: 'var(--border-soft)' }}
-              onClick={() => onArchive(order.id)}
-            >
-              Arquivar
-            </button>
+            {isArchived ? (
+              <button
+                className="btn btn-outline"
+                style={{ height: 36, paddingInline: 14, fontSize: 13, color: '#87726e', borderColor: 'var(--border-soft)' }}
+                onClick={() => onUnarchive(order.id)}
+              >
+                Desarquivar
+              </button>
+            ) : (
+              <button
+                className="btn btn-outline"
+                style={{ height: 36, paddingInline: 14, fontSize: 13, color: '#87726e', borderColor: 'var(--border-soft)' }}
+                onClick={() => onArchive(order.id)}
+              >
+                Arquivar
+              </button>
+            )}
           </div>
         </div>
 
@@ -317,6 +327,8 @@ function App() {
   const [pickupResult, setPickupResult] = useState(null);
   const [pickupError, setPickupError] = useState('');
   const [pickupLoading, setPickupLoading] = useState(false);
+  const [archivedOrders, setArchivedOrders] = useState([]);
+  const [loadingArchived, setLoadingArchived] = useState(false);
   useEffect(() => { if (!toast) return; const id = setTimeout(() => setToast(null), 2000); return () => clearTimeout(id); }, [toast]);
 
   async function buscarPedidoRetirada() {
@@ -362,6 +374,15 @@ function App() {
       .catch(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (tab !== 'Arquivados') return;
+    if (typeof DB === 'undefined') return;
+    setLoadingArchived(true);
+    DB.getPedidosArquivados()
+      .then(data => { setArchivedOrders(data); setLoadingArchived(false); })
+      .catch(() => setLoadingArchived(false));
+  }, [tab]);
+
   const tabs = ['Todos', ...ORDER_STATUSES, 'Arquivados'];
   const counts = useMemo(() => {
     const c = { Todos: orders.length };
@@ -370,7 +391,14 @@ function App() {
   }, [orders]);
 
   const filtered = useMemo(() => {
-    if (tab === 'Arquivados') return [];
+    if (tab === 'Arquivados') {
+      let r = archivedOrders.slice();
+      if (query.trim()) { const q = query.toLowerCase(); r = r.filter(o => o.customer.toLowerCase().includes(q) || String(o.id).includes(q) || o.city.toLowerCase().includes(q)); }
+      if (sort === 'Maior valor') r.sort((a,b) => b.total - a.total);
+      else if (sort === 'Menor valor') r.sort((a,b) => a.total - b.total);
+      else r.sort((a,b) => b.id - a.id);
+      return r;
+    }
     let r = orders.slice();
     if (tab !== 'Todos') r = r.filter(o => o.status === tab);
     if (query.trim()) { const q = query.toLowerCase(); r = r.filter(o => o.customer.toLowerCase().includes(q) || String(o.id).includes(q) || o.city.toLowerCase().includes(q)); }
@@ -378,7 +406,7 @@ function App() {
     else if (sort === 'Menor valor') r.sort((a,b) => a.total - b.total);
     else r.sort((a,b) => b.id - a.id);
     return r;
-  }, [orders, tab, query, sort]);
+  }, [orders, archivedOrders, tab, query, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -410,6 +438,16 @@ function App() {
           .catch(() => setToast('Erro ao arquivar pedido.'));
       },
     });
+  };
+
+  const unarchiveOrder = (id) => {
+    DB.desarquivarPedido(id)
+      .then(() => {
+        setArchivedOrders(os => os.filter(o => o.id !== id));
+        setOpenOrder(null);
+        setToast('Pedido restaurado!');
+      })
+      .catch(() => setToast('Erro ao restaurar pedido.'));
   };
 
   const revenue = orders.filter(o => o.status !== 'Cancelado').reduce((s,o) => s + o.total, 0);
@@ -523,7 +561,7 @@ function App() {
         </main>
       </div>
 
-      {openOrder && <OrderDrawer order={openOrder} onClose={() => setOpenOrder(null)} onStatusChange={changeStatus} onArchive={archiveOrder} />}
+      {openOrder && <OrderDrawer order={openOrder} onClose={() => setOpenOrder(null)} onStatusChange={changeStatus} onArchive={archiveOrder} onUnarchive={unarchiveOrder} isArchived={tab === 'Arquivados'} />}
       {toast && <div className="toast"><IconCheck size={16} color="#7be288" stroke={3} /><span>{toast}</span></div>}
       {confirmModal && (
         <ConfirmModal
