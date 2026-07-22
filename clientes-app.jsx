@@ -162,7 +162,7 @@ function ProfileDrawer({ c, onClose }) {
   );
 }
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 // ─────────────────────────────────────────────────────────────────────────
 // App
