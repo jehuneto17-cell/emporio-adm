@@ -366,3 +366,4 @@ function App() {
 | 2026-07-22 | Padronizada a paginação em todas as páginas do painel (Produtos, Pedidos, Estoque, Clientes, Cupons) para mostrar apenas 2 números de página por vez, em janela deslizante (página atual + próxima), em vez de acumular todos os números na tela. |
 | 2026-07-22 | estoque-app.jsx: PAGE_SIZE reduzido de 20 para 10 itens por página. |
 | 2026-07-22 | clientes-app.jsx: PAGE_SIZE reduzido de 20 para 10 itens por página. |
+| 2026-07-22 | relatorios-app.jsx: implementado o cálculo real de "novos clientes" (antes hardcoded como "—") — conta clientes cuja primeira compra de todos os tempos caiu dentro do período selecionado, usando o histórico completo de pedidos para determinar a primeira compra de cada um. |

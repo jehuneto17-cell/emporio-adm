@@ -25,6 +25,20 @@ function parseDateBR(s) {
   return isNaN(dt.getTime()) ? null : dt;
 }
 
+function getFirstPurchaseDates(allOrders) {
+  const firstPurchase = {};
+  for (const o of allOrders) {
+    const customerId = o.customerId || o.customer;
+    if (!customerId) continue;
+    const d = parseDateBR(o.date);
+    if (!d) continue;
+    if (!firstPurchase[customerId] || d < firstPurchase[customerId]) {
+      firstPurchase[customerId] = d;
+    }
+  }
+  return firstPurchase;
+}
+
 function getPeriodBounds(period) {
   const now = new Date();
   let start, end;
@@ -294,11 +308,14 @@ function App() {
   const top5         = metrics?.top5         ?? [];
   const totalCat     = categories.reduce((s, c) => s + c.value, 0);
 
-  const periodStart = getPeriodBounds(period).start;
+  const { start: periodStart, end: periodEnd } = getPeriodBounds(period);
   const mesAtual    = (s => s.charAt(0).toUpperCase() + s.slice(1))(
     periodStart.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
   );
   const sparkPoints = daily.map(d => d.v);
+
+  const novosClientes = loading ? 0 : Object.values(getFirstPurchaseDates(allOrders))
+    .filter(d => d >= periodStart && d <= periodEnd).length;
 
   const [exportingCSV, setExportingCSV] = useState(false);
   const [exportingFull, setExportingFull] = useState(false);
@@ -405,7 +422,7 @@ function App() {
               value={loading ? '—' : String(totalPedidos)} label="pedidos realizados" delta={null} spark={sparkPoints} />
             <Metric icon={IconChart} iconBg="#e8eaf6" iconFg="#3949ab"
               value={loading ? '—' : formatBRL(ticketMedio)} label="ticket médio por pedido" delta={null} />
-            <Metric icon={IconUserPlus} iconBg="#fdecd6" iconFg="#f57c00" value="—" label="novos clientes" delta={null} />
+            <Metric icon={IconUserPlus} iconBg="#fdecd6" iconFg="#f57c00" value={loading ? '—' : String(novosClientes)} label="novos clientes" delta={null} />
           </div>
 
           {/* daily revenue chart */}
