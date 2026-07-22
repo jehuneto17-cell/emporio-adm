@@ -260,7 +260,7 @@ function App() {
       .catch(() => setLoading(false));
   }, []);
 
-  const PAGE_SIZE = 20;
+  const PAGE_SIZE = 10;
   const [page, setPage] = useState(1);
   useEffect(() => { setPage(1); }, [filter, cat]);
 

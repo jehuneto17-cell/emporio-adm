@@ -364,3 +364,4 @@ function App() {
 | 2026-07-21 | Adicionado index.html na raiz do projeto, redirecionando automaticamente para login.html — resolve erro 404 ao acessar a URL raiz do domínio publicado no Vercel. |
 | 2026-07-21 | Adicionado suporte a PWA: manifest.json, service worker (sw.js, estratégia network-first), ícones (icons/) e meta tags em todas as páginas HTML. Painel agora é instalável como app. |
 | 2026-07-22 | Padronizada a paginação em todas as páginas do painel (Produtos, Pedidos, Estoque, Clientes, Cupons) para mostrar apenas 2 números de página por vez, em janela deslizante (página atual + próxima), em vez de acumular todos os números na tela. |
+| 2026-07-22 | estoque-app.jsx: PAGE_SIZE reduzido de 20 para 10 itens por página. |
