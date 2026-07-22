@@ -430,7 +430,9 @@ const td = { padding: '14px 16px', verticalAlign: 'middle', fontSize: 14, color:
 
 // ─── Pagination ──────────────────────────────────────────────────────────────
 function Pagination({ page, setPage, totalPages }) {
-  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+  const pages = [];
+  if (page <= totalPages) pages.push(page);
+  if (page + 1 <= totalPages) pages.push(page + 1);
   return (
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
       <button className="pg-btn" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))}>

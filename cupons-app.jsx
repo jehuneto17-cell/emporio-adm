@@ -436,9 +436,14 @@ function App() {
                 <div style={{ fontSize: 13, color: '#87726e' }}>Mostrando <span style={{ color: '#1c1c1a', fontWeight: 600 }}>{filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)}</span> de <span style={{ color: '#1c1c1a', fontWeight: 600 }}>{filtered.length}</span> resultados</div>
                 <div style={{ display: 'inline-flex', gap: 4 }}>
                   <button className="pg-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}><IconChevronLeft size={16} /></button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                    <button key={p} className={`pg-btn ${p === page ? 'active' : ''}`} onClick={() => setPage(p)}>{p}</button>
-                  ))}
+                  {(() => {
+                    const visiblePages = [];
+                    if (page <= totalPages) visiblePages.push(page);
+                    if (page + 1 <= totalPages) visiblePages.push(page + 1);
+                    return visiblePages.map(p => (
+                      <button key={p} className={`pg-btn ${p === page ? 'active' : ''}`} onClick={() => setPage(p)}>{p}</button>
+                    ));
+                  })()}
                   <button className="pg-btn" disabled={page === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}><IconChevronRight size={16} /></button>
                 </div>
               </div>
