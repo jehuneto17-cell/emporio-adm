@@ -527,6 +527,10 @@ function PagamentoTab({ accent, toast }) {
   const [pixAtivo, setPixAtivo] = useState(true);
   const [cartaoAtivo, setCartaoAtivo] = useState(true);
   const [boletoAtivo, setBoletoAtivo] = useState(false);
+  const [pixChave, setPixChave] = useState('');
+  const [pixQrCodeUrl, setPixQrCodeUrl] = useState('');
+  const [uploadingQr, setUploadingQr] = useState(false);
+  const [erroQr, setErroQr] = useState('');
   const [loading, setLoading] = useState(true);
 
   React.useEffect(() => {
@@ -544,6 +548,8 @@ function PagamentoTab({ accent, toast }) {
           setPixAtivo(p.pixAtivo != null ? p.pixAtivo : true);
           setCartaoAtivo(p.cartaoAtivo != null ? p.cartaoAtivo : true);
           setBoletoAtivo(p.boletoAtivo != null ? p.boletoAtivo : false);
+          setPixChave(p.pixChave || '');
+          setPixQrCodeUrl(p.pixQrCodeUrl || '');
         }
       }).catch(function(e) {
         console.warn('[PagamentoTab] erro:', e);
@@ -554,6 +560,32 @@ function PagamentoTab({ accent, toast }) {
     tryLoad();
   }, []);
 
+  async function uploadQrCode(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    setUploadingQr(true);
+    setErroQr('');
+    var randomId = 'qr_pix_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 12);
+    var fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', 'emporio-produtos');
+    fd.append('folder', 'emporio-minas/pix');
+    fd.append('public_id', randomId);
+    try {
+      var res = await fetch('https://api.cloudinary.com/v1_1/dv62fwdtv/image/upload', { method: 'POST', body: fd });
+      var data = await res.json();
+      if (data.secure_url) {
+        setPixQrCodeUrl(data.secure_url);
+      } else {
+        setErroQr('Não foi possível enviar o QR Code. Tente novamente.');
+      }
+    } catch (err) {
+      console.warn('[uploadQrCode]', err);
+      setErroQr('Erro de rede ao enviar o QR Code. Tente novamente.');
+    }
+    setUploadingQr(false);
+  }
+
   async function savePagamento() {
     await DB.setConfiguracao('pagamento', {
       taxaCredito: parseFloat(taxaCredito) || 0,
@@ -561,6 +593,8 @@ function PagamentoTab({ accent, toast }) {
       pixAtivo,
       cartaoAtivo,
       boletoAtivo,
+      pixChave,
+      pixQrCodeUrl,
     });
     toast('Configurações de pagamento salvas!');
   }
@@ -577,15 +611,70 @@ function PagamentoTab({ accent, toast }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
           {/* PIX */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px', background: '#f6f3ef', borderRadius: 12 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 11, background: '#e8f0fe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <span style={{ color: '#1976d2', fontWeight: 800, fontSize: 13 }}>PIX</span>
+          <div style={{ padding: '16px', background: '#f6f3ef', borderRadius: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: pixAtivo ? 20 : 0 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 11, background: '#e8f0fe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <span style={{ color: '#1976d2', fontWeight: 800, fontSize: 13 }}>PIX</span>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, color: '#1c1c1a' }}>PIX</div>
+                <div style={{ fontSize: 13, color: '#2e7d32', fontWeight: 600, marginTop: 2 }}>Sem acréscimo — incentiva pagamento instantâneo</div>
+              </div>
+              <Toggle on={pixAtivo} onChange={setPixAtivo} />
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 15, fontWeight: 600, color: '#1c1c1a' }}>PIX</div>
-              <div style={{ fontSize: 13, color: '#2e7d32', fontWeight: 600, marginTop: 2 }}>Sem acréscimo — incentiva pagamento instantâneo</div>
-            </div>
-            <Toggle on={pixAtivo} onChange={setPixAtivo} />
+
+            {pixAtivo && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 16, borderTop: '1px solid var(--border-soft)' }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#54433f', marginBottom: 6 }}>Chave PIX da loja</div>
+                  <input
+                    type="text"
+                    className="input"
+                    value={pixChave}
+                    onChange={e => setPixChave(e.target.value)}
+                    placeholder="CNPJ, celular, e-mail ou chave aleatória"
+                    style={{ width: '100%' }}
+                  />
+                  <div style={{ fontSize: 12, color: '#87726e', marginTop: 6 }}>
+                    Esta chave será exibida ao cliente na tela de pagamento.
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#54433f', marginBottom: 6 }}>QR Code PIX da loja</div>
+                  {pixQrCodeUrl ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                      <img src={pixQrCodeUrl} alt="QR Code PIX" style={{ width: 120, height: 120, objectFit: 'contain', borderRadius: 10, border: '1px solid var(--border-soft)', background: '#fff' }} />
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <label style={{ fontSize: 13, fontWeight: 600, color: window.THEME.primary, cursor: uploadingQr ? 'wait' : 'pointer' }}>
+                          {uploadingQr ? 'Enviando...' : 'Enviar QR Code'}
+                          <input type="file" accept="image/*" onChange={uploadQrCode} style={{ display: 'none' }} disabled={uploadingQr} />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setPixQrCodeUrl('')}
+                          style={{ fontSize: 13, fontWeight: 600, color: '#ba1a1a', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '24px 0', borderRadius: 10, border: '1.5px dashed var(--border)', background: '#faf7f3', cursor: uploadingQr ? 'wait' : 'pointer' }}>
+                      {uploadingQr
+                        ? <span style={{ fontSize: 13, color: window.THEME.primary, fontWeight: 600 }}>Enviando...</span>
+                        : <>
+                            <span style={{ fontSize: 13, color: '#54433f', fontWeight: 600 }}>Enviar QR Code</span>
+                            <span style={{ fontSize: 11.5, color: '#b0a09c' }}>JPG, PNG — clique para selecionar</span>
+                          </>
+                      }
+                      <input type="file" accept="image/*" onChange={uploadQrCode} style={{ display: 'none' }} disabled={uploadingQr} />
+                    </label>
+                  )}
+                  {erroQr && <div style={{ fontSize: 12.5, color: '#ba1a1a', marginTop: 8 }}>{erroQr}</div>}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Cartão de Crédito */}
