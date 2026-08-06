@@ -104,6 +104,16 @@
     }
   }
 
+  async function getProduto(id) {
+    try {
+      var doc = await db.collection('produtos').doc(id).get();
+      return doc.exists ? docToObj(doc) : null;
+    } catch (e) {
+      console.warn('[DB.getProduto]', e.code || e.message);
+      return null;
+    }
+  }
+
   async function updateEstoqueProduto(id, novoEstoque) {
     try {
       var status = novoEstoque === 0 ? 'Esgotado' : 'Ativo';
@@ -736,12 +746,113 @@
     }
   }
 
+  // ── CONFIRMAÇÃO DE PAGAMENTO PIX MANUAL ────────────────────────────────────
+  // Rebaixa o estoque de cada item do pedido (por productId) e conclui a venda.
+  // Protegido contra baixa dupla pelo campo estoqueBaixado no doc do pedido.
+  async function confirmarPagamentoPedido(id) {
+    var resultado = {
+      ok: false,
+      jaConfirmado: false,
+      resumo: [],       // { nome, sku, stockAntes, stockDepois }
+      naoBaixados: [],  // { nome, sku } — itens sem productId
+      erro: null,
+    };
+
+    try {
+      var doc = await db.collection('pedidos').doc(id).get();
+      if (!doc.exists) {
+        resultado.erro = 'Pedido não encontrado.';
+        return resultado;
+      }
+      var pedido = doc.data();
+
+      // Proteção contra baixa dupla: se já foi baixado, só garante o status.
+      if (pedido.estoqueBaixado === true) {
+        resultado.jaConfirmado = true;
+        if (pedido.status !== 'Pago') {
+          await db.collection('pedidos').doc(id).update({
+            status: 'Pago',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          });
+        }
+        resultado.ok = true;
+        return resultado;
+      }
+
+      var products = Array.isArray(pedido.products) ? pedido.products : [];
+      var resumo = [];
+      var naoBaixados = [];
+
+      for (var i = 0; i < products.length; i++) {
+        var item = products[i];
+        var nome = item.n || item.name || 'Produto sem nome';
+        var sku = item.sku || '—';
+        var productId = item.productId || '';
+        var qtd = item.q || 1;
+
+        if (!productId) {
+          naoBaixados.push({ nome: nome, sku: sku });
+          continue;
+        }
+
+        try {
+          var prodDoc = await db.collection('produtos').doc(productId).get();
+          if (!prodDoc.exists) {
+            naoBaixados.push({ nome: nome, sku: sku });
+            continue;
+          }
+          var stockAntes = prodDoc.data().stock != null ? prodDoc.data().stock : 0;
+          var stockDepois = Math.max(0, stockAntes - qtd);
+
+          await updateEstoqueProduto(productId, stockDepois);
+          resumo.push({ nome: nome, sku: sku, stockAntes: stockAntes, stockDepois: stockDepois });
+        } catch (e) {
+          console.warn('[DB.confirmarPagamentoPedido] falha ao baixar item', sku, e.code || e.message);
+          naoBaixados.push({ nome: nome, sku: sku });
+        }
+      }
+
+      // Só marca estoqueBaixado se pelo menos um item foi processado com sucesso
+      // ou se não havia itens a baixar (evita marcar "baixado" numa falha total).
+      var algumBaixado = resumo.length > 0 || products.length === 0;
+
+      await db.collection('pedidos').doc(id).update({
+        status: 'Pago',
+        estoqueBaixado: algumBaixado,
+        pagamentoConfirmadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+
+      // Sincroniza status com a subcoleção do app do cliente, se houver uid.
+      if (pedido.uid) {
+        try {
+          await db.collection('users').doc(pedido.uid).collection('orders').doc(id).update({
+            status: 'Pago',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          });
+        } catch (e) {
+          console.warn('[DB.confirmarPagamentoPedido] falha ao sincronizar users/orders', e.code || e.message);
+        }
+      }
+
+      resultado.ok = true;
+      resultado.resumo = resumo;
+      resultado.naoBaixados = naoBaixados;
+      return resultado;
+    } catch (e) {
+      console.warn('[DB.confirmarPagamentoPedido]', e.code || e.message);
+      resultado.erro = e.message || 'Erro ao confirmar pagamento.';
+      return resultado;
+    }
+  }
+
   // ── Exporta tudo para window.DB ────────────────────────────────────────────
   window.DB = {
     getProdutos:          getProdutos,
     addProduto:           addProduto,
     updateProduto:        updateProduto,
     deleteProduto:        deleteProduto,
+    getProduto:           getProduto,
     updateEstoqueProduto: updateEstoqueProduto,
     getPedidos:           getPedidos,
     getPedidosArquivados: getPedidosArquivados,
@@ -752,6 +863,7 @@
     arquivarPedido:              arquivarPedido,
     desarquivarPedido:           desarquivarPedido,
     updateRastreamentoPedido:    updateRastreamentoPedido,
+    confirmarPagamentoPedido:    confirmarPagamentoPedido,
     getClientes:          getClientes,
     getCliente:           getCliente,
     upsertCliente:        upsertCliente,

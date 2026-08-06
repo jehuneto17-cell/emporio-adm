@@ -2,6 +2,11 @@ const { useState, useEffect, useRef } = React;
 
 const STATUS_OPTIONS = ['Pendente', 'Preparando', 'Enviado', 'Em trânsito', 'Entregue', 'Cancelado'];
 
+function isComprovantePdf(url) {
+  if (!url) return false;
+  return url.toLowerCase().indexOf('.pdf') !== -1 || url.indexOf('/raw/') !== -1;
+}
+
 // Normaliza os dados brutos do Firestore para o shape esperado pelo JSX.
 // DB.getPedido() retorna campos planos — customer/payment/shipping são strings.
 // Esta função garante que ORDER.items, ORDER.customer, ORDER.payment etc.
@@ -256,6 +261,7 @@ function App() {
   const [savingTracking, setSavingTracking] = useState(false);
   const [generatingLabel, setGeneratingLabel] = useState(false);
   const [showPrint, setShowPrint] = useState(false);
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
   const [toast, setToast] = useState(null);
   useEffect(() => { if (!toast) return; const id = setTimeout(() => setToast(null), 2400); return () => clearTimeout(id); }, [toast]);
 
@@ -355,6 +361,51 @@ function App() {
 
   const confirmPrint = () => { setShowPrint(false); showToast('Etiqueta enviada para impressão'); };
 
+  const confirmarPagamento = async () => {
+    if (typeof DB === 'undefined' || !ORDER) return;
+    var ok = window.confirm('Confirmar que o pagamento deste pedido foi recebido? O estoque será baixado e a venda concluída.');
+    if (!ok) return;
+
+    setConfirmingPayment(true);
+    try {
+      var resultado = await DB.confirmarPagamentoPedido(ORDER.id);
+
+      if (resultado.erro) {
+        showToast('Erro ao confirmar pagamento: ' + resultado.erro);
+        return;
+      }
+
+      if (resultado.jaConfirmado) {
+        showToast('Estoque já havia sido baixado neste pedido.');
+      } else {
+        var linhas = resultado.resumo.map(function(r) {
+          return r.nome + ' (' + r.sku + '): ' + r.stockAntes + ' → ' + r.stockDepois;
+        });
+        var msg = resultado.resumo.length > 0
+          ? 'Pagamento confirmado! Estoque baixado: ' + linhas.join(' · ')
+          : 'Pagamento confirmado!';
+        if (resultado.naoBaixados.length > 0) {
+          var faltantes = resultado.naoBaixados.map(function(n) { return n.nome + ' (' + n.sku + ')'; }).join(', ');
+          msg += ' — Atenção: não foi possível baixar automaticamente: ' + faltantes + '. Ajuste manualmente em Estoque.';
+        }
+        showToast(msg);
+      }
+
+      // Recarrega o pedido para refletir o novo status na tela.
+      var atualizado = await DB.getPedido(ORDER.id);
+      if (atualizado) {
+        var normalized = normalizeOrder(atualizado);
+        setOrder(normalized);
+        setStatus(normalized.status || 'Pago');
+        setSavedStatus(normalized.status || 'Pago');
+      }
+    } catch (e) {
+      showToast('Erro ao confirmar pagamento. Tente novamente.');
+    } finally {
+      setConfirmingPayment(false);
+    }
+  };
+
   return (
     <div className="stage" style={{ display: 'flex', position: 'relative' }}>
       <SharedSidebar active="pedidos" />
@@ -378,6 +429,12 @@ function App() {
             </div>
           </div>
           <button className="btn btn-outline" onClick={() => setShowPrint(true)}><IconPrinter size={16} /> Imprimir etiqueta</button>
+          {ORDER.status === 'Aguardando confirmação' && (
+            <button className="btn btn-primary" onClick={confirmarPagamento} disabled={confirmingPayment}
+              style={{ background: '#2e7d32', borderColor: '#2e7d32' }}>
+              {confirmingPayment ? <><span className="spinner" /> Confirmando...</> : <><IconCheck size={16} /> Confirmar pagamento</>}
+            </button>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#faf7f3', border: '1px solid var(--border-soft)', borderRadius: 12, padding: '10px 14px' }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: '#54433f', whiteSpace: 'nowrap' }}>Atualizar status:</span>
             <Dropdown value={status} options={STATUS_OPTIONS} onChange={setStatus} minWidth={150} />
@@ -448,6 +505,27 @@ function App() {
                   </div>
                 </div>
               </Card>
+
+              {/* Comprovante PIX */}
+              {ORDER.comprovanteUrl && (
+                <Card title="Comprovante de pagamento" icon={IconCheck}>
+                  {isComprovantePdf(ORDER.comprovanteUrl) ? (
+                    <a href={ORDER.comprovanteUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline" style={{ textDecoration: 'none' }}>
+                      <IconExternal size={15} /> Abrir comprovante (PDF)
+                    </a>
+                  ) : (
+                    <a href={ORDER.comprovanteUrl} target="_blank" rel="noopener noreferrer">
+                      <img src={ORDER.comprovanteUrl} alt="Comprovante de pagamento PIX"
+                        style={{ maxWidth: 320, width: '100%', borderRadius: 10, border: '1px solid var(--border-soft)', display: 'block', cursor: 'pointer' }} />
+                    </a>
+                  )}
+                  {ORDER.comprovanteEnviadoEm && typeof DB !== 'undefined' && (
+                    <div style={{ fontSize: 12.5, color: '#87726e', marginTop: 10 }}>
+                      Enviado em {DB.tsToDate(ORDER.comprovanteEnviadoEm)} às {DB.tsToTime(ORDER.comprovanteEnviadoEm)}
+                    </div>
+                  )}
+                </Card>
+              )}
 
               {/* Payment */}
               <Card title="Forma de pagamento">
