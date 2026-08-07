@@ -385,7 +385,7 @@ function FreteTab({ accent, toast }) {
     cep: '', rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: 'MG',
   });
   const [cepLoading, setCepLoading] = useState(false);
-  const [cepOrigem] = useState('37900-900');
+  const [cepOrigem] = useState('37902-308');
 
   React.useEffect(() => {
     if (typeof DB === 'undefined') return;

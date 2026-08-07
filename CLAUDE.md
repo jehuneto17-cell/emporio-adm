@@ -372,3 +372,4 @@ function App() {
 | 2026-07-22 | pedidos-app.jsx: contador da aba "Arquivados" corrigido para refletir a quantidade real de pedidos arquivados (antes sempre mostrava 0). |
 | 2026-08-06 | Adicionados campos de Chave PIX e upload de QR Code na aba Formas de Pagamento (PagamentoTab), salvos em configuracoes/pagamento, para o fluxo de PIX manual com confirmação. |
 | 2026-08-06 | order-detail do painel: exibição do comprovante PIX (imagem inline / PDF em nova aba) + botão Confirmar pagamento (só em 'Aguardando confirmação') que baixa estoque por productId (com proteção estoqueBaixado contra baixa dupla) e conclui a venda (status 'Pago', pagamentoConfirmadoEm). Fecha o fluxo de PIX manual. |
+| 2026-08-06 | Corrigido CEP hardcoded no aviso informativo da aba Frete e entrega (37900-900 → 37902-308) para refletir o novo endereço de origem da loja. |
