@@ -58,6 +58,7 @@
           tags:         Array.isArray(d.tags) ? d.tags : [],
           minStock:     d.minStock     != null ? d.minStock : 5,
           variations:   Array.isArray(d.variations) ? d.variations : [],
+          varType:      d.varType      || 'peso',
           imageUrl: d.imageUrl || null,
           images: Array.isArray(d.images) ? d.images : [],
           weight:       d.weight       || 0,

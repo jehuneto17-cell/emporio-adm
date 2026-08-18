@@ -338,7 +338,7 @@ function ProductsTable({ rows, selected, toggleRow, toggleAll, onAction, catName
         <col style={{ width: 130 }} />
         <col style={{ width: 110 }} />
         <col style={{ width: 130 }} />
-        <col style={{ width: 130 }} />
+        <col style={{ width: 160 }} />
       </colgroup>
       <thead>
         <tr style={{ background: 'var(--th)', borderTop: '1px solid var(--border-soft)', borderBottom: '1px solid var(--border-soft)' }}>
@@ -389,6 +389,7 @@ function ProductsTable({ rows, selected, toggleRow, toggleAll, onAction, catName
             <td style={{ ...td, textAlign: 'right', paddingRight: 16 }}>
               <div style={{ display: 'inline-flex', gap: 2 }}>
                 <button className="btn-icon" title="Editar" onClick={() => onAction('edit', p)}><IconEdit size={16} /></button>
+                <button className="btn-icon" title="Duplicar" onClick={() => onAction('duplicate', p)}><IconCopy size={16} /></button>
                 <button className="btn-icon" title="Ver" onClick={() => onAction('view', p)}><IconEye size={16} /></button>
                 <button className="btn-icon danger" title="Excluir" onClick={() => onAction('delete', p)}><IconTrash size={16} /></button>
               </div>
@@ -558,6 +559,10 @@ function App() {
   const onAction = (kind, p) => {
     if (kind === 'edit') {
       window.location.href = 'Editar Produto.html?id=' + encodeURIComponent(p.id);
+      return;
+    }
+    if (kind === 'duplicate') {
+      window.location.href = 'Editar Produto.html?copyOf=' + encodeURIComponent(p.id);
       return;
     }
     if (kind === 'delete') {

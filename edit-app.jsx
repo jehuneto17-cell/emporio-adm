@@ -279,29 +279,39 @@ function App() {
   const [dbCats, setDbCats] = useState([]);
   // ui
   const [productId, setProductId] = useState(null);
+  const [copySourceName, setCopySourceName] = useState('');
   const [updatedAt, setUpdatedAt] = useState(null);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [toast, setToast] = useState(null);
   useEffect(() => { if (!toast) return; const id = setTimeout(() => setToast(null), 2400); return () => clearTimeout(id); }, [toast]);
 
-  // Carrega produto do Firestore se ?id= estiver na URL
+  // Carrega produto do Firestore.
+  // ?id=     → edita o produto existente
+  // ?copyOf= → abre o formulário preenchido como CÓPIA (nada é salvo até clicar em Salvar;
+  //            productId fica null, então handleSave chama DB.addProduto e cria um produto novo)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
-    if (!id || typeof DB === 'undefined') return;
-    setProductId(id);
+    const copyOf = params.get('copyOf');
+    const sourceId = id || copyOf;
+    const isCopy = !id && !!copyOf;
+    if (!sourceId || typeof DB === 'undefined') return;
+    if (!isCopy) setProductId(sourceId);
     DB.getProdutos().then(list => {
-      const p = list.find(x => x.id === id);
+      const p = list.find(x => x.id === sourceId);
       if (!p) return;
+      if (isCopy) setCopySourceName(p.name || '');
       setName(p.name || '');
-      setSku(p.sku || '');
+      // SKU é identificador único — não é copiado
+      setSku(isCopy ? '' : (p.sku || ''));
       setShortDesc(p.description || '');
       setLongDesc(p.longDesc || '');
       setPrice(p.price != null ? String(p.price) : '');
       setPromo(p.promo != null ? String(p.promo) : '');
       setHasPromo(p.promo != null);
-      setStock(p.stock != null ? String(p.stock) : '0');
+      // estoque do original não vale para o produto novo
+      setStock(isCopy ? '0' : (p.stock != null ? String(p.stock) : '0'));
       setMinStock(p.minStock != null ? String(p.minStock) : '5');
       setCategory(p.category || '');
       setSubcategory(p.subcategory || '');
@@ -320,7 +330,7 @@ function App() {
       setVisible(p.visible !== false);
       setAllowReviews(p.allowReviews !== false);
       setMeta(p.meta || '');
-      setUpdatedAt(p.updatedAt || null);
+      setUpdatedAt(isCopy ? null : (p.updatedAt || null));
       // Carrega galeria — compatível com campo legado imageUrl (foto única)
       setImages(Array.isArray(p.images) && p.images.length > 0
         ? p.images
@@ -477,6 +487,22 @@ function App() {
               </button>
             </div>
           </div>
+
+          {/* Aviso de duplicação — deixa claro que o original não será alterado */}
+          {copySourceName && (
+            <div style={{
+              display: 'flex', alignItems: 'flex-start', gap: 12,
+              background: '#fdf6ec', border: '1px solid #d8a360', borderRadius: 12,
+              padding: '14px 18px', marginBottom: 24,
+            }}>
+              <span style={{ color: '#964904', marginTop: 1, flexShrink: 0 }}><IconCopy size={18} /></span>
+              <div style={{ fontSize: 14, color: '#54433f', lineHeight: 1.5 }}>
+                Você está criando uma <strong>cópia</strong> de <strong>"{copySourceName}"</strong>.
+                O produto original não será alterado.
+                <div style={{ color: '#87726e', marginTop: 2 }}>Ajuste o nome e o SKU antes de salvar.</div>
+              </div>
+            </div>
+          )}
 
           {/* Two columns */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: 24, alignItems: 'start' }}>
