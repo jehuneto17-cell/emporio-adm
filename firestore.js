@@ -296,6 +296,15 @@
     }
   }
 
+  async function deletePedido(id) {
+    try {
+      await db.collection('pedidos').doc(id).delete();
+    } catch (e) {
+      console.warn('[DB.deletePedido]', e.code || e.message);
+      throw e;
+    }
+  }
+
   // ── CLIENTES ───────────────────────────────────────────────────────────────
 
   async function getClientes() {
@@ -877,6 +886,7 @@
     updateStatusPedido:          updateStatusPedido,
     arquivarPedido:              arquivarPedido,
     desarquivarPedido:           desarquivarPedido,
+    deletePedido:                deletePedido,
     updateRastreamentoPedido:    updateRastreamentoPedido,
     confirmarPagamentoPedido:    confirmarPagamentoPedido,
     getClientes:          getClientes,

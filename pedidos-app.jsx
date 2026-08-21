@@ -24,7 +24,7 @@ function MiniMetric({ label, value, tone }) {
 const STEPS = ['Pago','Preparando','Em trânsito','Entregue'];
 const STEPS_LABELS = ['Pagamento\nConfirmado','Preparando','Em trânsito','Entregue'];
 
-function OrderDrawer({ order, onClose, onStatusChange, onArchive, onUnarchive, isArchived }) {
+function OrderDrawer({ order, onClose, onStatusChange, onArchive, onUnarchive, onDelete, isArchived }) {
   if (!order) return null;
   const products = Array.isArray(order.products) ? order.products : [];
   const subtotal = products.reduce((s,p) => s + (p.p || 0) * (p.q || 1), 0);
@@ -144,13 +144,22 @@ function OrderDrawer({ order, onClose, onStatusChange, onArchive, onUnarchive, i
           <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
             <a href={`Detalhe do Pedido.html?id=${order.id}`} className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', textDecoration: 'none', height: 36, fontSize: 13 }}>Ver detalhe completo <IconChevronRight size={13} /></a>
             {isArchived ? (
-              <button
-                className="btn btn-outline"
-                style={{ height: 36, paddingInline: 14, fontSize: 13, color: '#87726e', borderColor: 'var(--border-soft)' }}
-                onClick={() => onUnarchive(order.id)}
-              >
-                Desarquivar
-              </button>
+              <>
+                <button
+                  className="btn btn-outline"
+                  style={{ height: 36, paddingInline: 14, fontSize: 13, color: '#87726e', borderColor: 'var(--border-soft)' }}
+                  onClick={() => onUnarchive(order.id)}
+                >
+                  Desarquivar
+                </button>
+                <button
+                  className="btn btn-outline"
+                  style={{ height: 36, paddingInline: 14, fontSize: 13, color: '#ba1a1a', borderColor: '#f0b3ae' }}
+                  onClick={() => onDelete(order.id)}
+                >
+                  Excluir
+                </button>
+              </>
             ) : (
               <button
                 className="btn btn-outline"
@@ -450,6 +459,22 @@ function App() {
       .catch(() => setToast('Erro ao restaurar pedido.'));
   };
 
+  const deleteOrder = (id) => {
+    setConfirmModal({
+      message: 'Excluir este pedido permanentemente? Essa ação não pode ser desfeita.',
+      onConfirm: () => {
+        setConfirmModal(null);
+        DB.deletePedido(id)
+          .then(() => {
+            setArchivedOrders(os => os.filter(o => o.id !== id));
+            setOpenOrder(null);
+            setToast('Pedido excluído!');
+          })
+          .catch(() => setToast('Erro ao excluir pedido.'));
+      },
+    });
+  };
+
   const revenue = orders.filter(o => o.status !== 'Cancelado').reduce((s,o) => s + o.total, 0);
 
   return (
@@ -561,7 +586,7 @@ function App() {
         </main>
       </div>
 
-      {openOrder && <OrderDrawer order={openOrder} onClose={() => setOpenOrder(null)} onStatusChange={changeStatus} onArchive={archiveOrder} onUnarchive={unarchiveOrder} isArchived={tab === 'Arquivados'} />}
+      {openOrder && <OrderDrawer order={openOrder} onClose={() => setOpenOrder(null)} onStatusChange={changeStatus} onArchive={archiveOrder} onUnarchive={unarchiveOrder} onDelete={deleteOrder} isArchived={tab === 'Arquivados'} />}
       {toast && <div className="toast"><IconCheck size={16} color="#7be288" stroke={3} /><span>{toast}</span></div>}
       {confirmModal && (
         <ConfirmModal
