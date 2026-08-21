@@ -501,12 +501,12 @@ function App() {
                 </tr>
               </thead>
               <tbody>
-                {loading ? (
+                {(tab === 'Arquivados' ? loadingArchived : loading) ? (
                   <tr><td colSpan={7} style={{ padding: 60, textAlign: 'center' }}>
                     <div style={{ width: 24, height: 24, borderRadius: '50%', border: '3px solid var(--border)', borderTopColor: 'var(--primary)', animation: 'spin .7s linear infinite', margin: '0 auto 12px' }} />
                     <div style={{ color: 'var(--muted)', fontSize: 14 }}>Carregando pedidos...</div>
                   </td></tr>
-                ) : orders.length === 0 ? (
+                ) : (tab === 'Arquivados' ? archivedOrders.length === 0 : orders.length === 0) ? (
                   <tr><td colSpan={7}>
                     <div style={{ padding: '60px 32px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
                       <div style={{ width: 56, height: 56, borderRadius: 16, background: '#e3f1e3', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
