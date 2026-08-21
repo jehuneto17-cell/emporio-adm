@@ -5,142 +5,127 @@
 1. Acesse [console.firebase.google.com](https://console.firebase.google.com/)
 2. Selecione o projeto **emporio-coisas-de-minas**
 3. Menu lateral: **Firestore Database → Regras**
-4. Apague todo o conteúdo atual
-5. Cole o bloco abaixo **exatamente como está**
-6. Clique em **Publicar**
+4. Cole o bloco abaixo (ou edite só a linha necessária)
+5. Clique em **Publicar**
+
+> Este arquivo reflete as regras **realmente publicadas** no Firebase Console (verificado em 2026-08-21). Não é um rascunho — é a fonte da verdade sincronizada manualmente sempre que as regras mudam no Console.
 
 ---
 
-## ⚠️ Alerta de inconsistência de nomenclatura
-
-O **painel admin** usa nomes de coleção em **português** (`produtos`, `pedidos`, `clientes`).
-O **app mobile** planeja usar nomes em **inglês** (`products`, `orders`, `users`).
-
-**Problema:** se o admin escreve em `produtos` e o app lê de `products`, são duas coleções separadas no Firestore — os dados não são compartilhados.
-
-**Decisão necessária antes de lançar:**
-- Opção A (recomendada): padronizar em português — o painel já está implementado com esses nomes. Basta o app mobile usar os mesmos nomes quando implementar Firestore.
-- Opção B: padronizar em inglês — requer renomear as coleções do painel admin e atualizar todos os arquivos JSX.
-
-As regras abaixo cobrem **ambos os conjuntos de nomes** para garantir que nenhum acesso fique bloqueado durante a transição.
-
----
-
-## Regras consolidadas — copie e cole no Console
+## Regras publicadas
 
 ```
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // ── Funções auxiliares ─────────────────────────────────────────────────
-
-    // Admin identificado pelo e-mail.
-    // NÃO usa email_verified — contas com senha não são verificadas automaticamente.
-    function isAdmin() {
-      return request.auth != null
-          && request.auth.token.email == 'emporiominas00@gmail.com';
-    }
-
-    // Qualquer usuário autenticado
-    function isUser() {
+    function isAuth() {
       return request.auth != null;
     }
-
-    // O próprio usuário (pelo uid)
     function isOwner(uid) {
-      return isUser() && request.auth.uid == uid;
+      return isAuth() && request.auth.uid == uid;
+    }
+    function isAdmin() {
+      return isAuth() && request.auth.token.email == 'emporiominas00@gmail.com';
+    }
+    function hasFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // ADMIN — acesso total a TODAS as coleções e subcoleções
-    // Esta regra cobre os dois idiomas sem precisar listar cada coleção.
-    // ══════════════════════════════════════════════════════════════════════
-    match /{document=**} {
-      allow read, write: if isAdmin();
+    // Lista de status que um CLIENTE (não-admin) tem permissão de gravar.
+    // 'Pago' e 'Confirmado' NÃO estão aqui de propósito: só o admin confirma.
+    function statusPermitidoCliente() {
+      return request.resource.data.status in [
+        'Pendente',
+        'Aguardando pagamento',
+        'Aguardando confirmação',
+        'Cancelado'
+      ];
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // PAINEL ADMIN — coleções em português
-    // ══════════════════════════════════════════════════════════════════════
-
-    // Catálogo de produtos — leitura pública (sem login)
-    match /produtos/{id} {
+    match /banners/{id} {
       allow read: if true;
+      allow write: if isAdmin();
     }
-
-    // Categorias — leitura pública
+    match /produtos/{productId} {
+      allow read: if true;
+      allow create: if isAdmin() && hasFields(['name', 'price', 'category']);
+      allow update, delete: if isAdmin();
+      match /reviews/{uid} {
+        allow read: if true;
+        allow create, update: if isOwner(uid);
+        allow delete: if isOwner(uid) || isAdmin();
+      }
+    }
     match /categorias/{id} {
       allow read: if true;
+      allow write: if isAdmin();
     }
 
-    // Configurações da loja (horários, endereço, redes) — leitura pública
+    // Leitura liberada para qualquer autenticado — o app do cliente precisa
+    // ler a chave PIX + QR de configuracoes/pagamento. Escrita só admin.
     match /configuracoes/{id} {
-      allow read: if true;
+      allow read: if isAuth();
+      allow write: if isAdmin();
     }
 
-    // Cupons — autenticado pode ler para validar no checkout
     match /cupons/{id} {
-      allow read: if isUser();
+      allow read: if isAuth();
+      allow write: if isAdmin();
     }
 
-    // Pedidos — autenticado cria o próprio; lê apenas o próprio
+    // ESPELHO ADMIN (raiz):
+    // - admin: pode tudo, incluindo excluir permanentemente (usado pela aba
+    //   Arquivados do painel — DB.deletePedido)
+    // - cliente dono: só pode atualizar se o novo status estiver na lista
+    //   permitida (impede o cliente de marcar o próprio pedido como 'Pago')
     match /pedidos/{pedidoId} {
-      allow create: if isUser() && request.resource.data.userId == request.auth.uid;
-      allow read:   if isUser() && resource.data.userId == request.auth.uid;
+      allow create: if isAuth();
+      allow read: if isAuth() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow update: if isAdmin()
+        || (isAuth() && resource.data.uid == request.auth.uid && statusPermitidoCliente());
+      allow delete: if isAdmin();
     }
 
-    // Clientes — cada usuário acessa só o próprio perfil (doc ID == uid)
-    match /clientes/{userId} {
-      allow read, write: if isOwner(userId);
+    match /clientes/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create, update: if isOwner(uid);
+      allow delete: if false;
     }
-
-    // ══════════════════════════════════════════════════════════════════════
-    // APP MOBILE — coleções em inglês (quando implementar Firestore)
-    // ══════════════════════════════════════════════════════════════════════
-
-    // Catálogo — leitura pública
-    match /products/{id} {
-      allow read: if true;
-    }
-
-    // Categorias — leitura pública
-    match /categories/{id} {
-      allow read: if true;
-    }
-
-    // Configurações — leitura pública
-    match /settings/{id} {
-      allow read: if true;
-    }
-
-    // Cupons — autenticado pode ler
-    match /coupons/{id} {
-      allow read: if isUser();
-    }
-
-    // Perfil do usuário + subcoleções (carrinho, favoritos, histórico)
     match /users/{uid} {
-      allow read, write: if isOwner(uid);
-
+      allow read: if isOwner(uid) || isAdmin();
+      allow write: if isOwner(uid);
       match /cart/{itemId} {
         allow read, write: if isOwner(uid);
       }
-
       match /favorites/{itemId} {
         allow read, write: if isOwner(uid);
       }
 
+      // PEDIDO DO CLIENTE (subcoleção lida pelo app mobile):
+      // - admin: pode tudo (confirmar pagamento, mudar pra 'Pago', etc.)
+      // - cliente dono: só pode atualizar se o novo status estiver na lista
+      //   permitida (pode anexar comprovante e ir pra 'Aguardando
+      //   confirmação', mas nunca 'Pago')
       match /orders/{orderId} {
-        allow read:   if isOwner(uid);
+        allow read: if isOwner(uid) || isAdmin();
         allow create: if isOwner(uid);
+        allow update: if isAdmin()
+          || (isOwner(uid) && statusPermitidoCliente());
+        allow delete: if false;
+      }
+
+      match /addresses/{addressId} {
+        allow read, write: if isOwner(uid);
+      }
+      match /settings/{settingId} {
+        allow read, write: if isOwner(uid);
+      }
+      match /notifications/{notifId} {
+        allow read, write: if isOwner(uid);
       }
     }
-
-    // Pedidos como coleção global (alternativa ao subcampo de users)
-    match /orders/{orderId} {
-      allow create: if isUser() && request.resource.data.userId == request.auth.uid;
-      allow read:   if isUser() && resource.data.userId == request.auth.uid;
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
@@ -148,49 +133,26 @@ service cloud.firestore {
 
 ---
 
-## Mapa completo de permissões
+## Mapa de permissões — coleções principais
 
-### Coleções do painel admin (português)
-
-| Coleção | Admin | Usuário autenticado | Público |
-|---------|-------|---------------------|---------|
+| Coleção | Admin | Dono/autenticado | Público |
+|---------|-------|-------------------|---------|
 | `produtos` | ✅ tudo | leitura | ✅ leitura |
-| `categorias` | ✅ tudo | leitura | ✅ leitura |
-| `configuracoes` | ✅ tudo | leitura | ✅ leitura |
-| `cupons` | ✅ tudo | ✅ leitura | ❌ |
-| `pedidos` | ✅ tudo | criar e ler o próprio | ❌ |
-| `clientes/{uid}` | ✅ tudo | ler/escrever o próprio | ❌ |
+| `categorias` | ✅ tudo | — | ✅ leitura |
+| `banners` | ✅ tudo | — | ✅ leitura |
+| `configuracoes` | ✅ tudo | leitura | ❌ |
+| `cupons` | ✅ tudo | leitura | ❌ |
+| `pedidos` (espelho admin) | ✅ tudo, inclusive excluir | criar; ler e atualizar (status limitado) o próprio | ❌ |
+| `clientes/{uid}` | ✅ tudo | ler/criar/atualizar o próprio; nunca excluir | ❌ |
+| `users/{uid}/orders` | ✅ tudo | criar; ler e atualizar (status limitado) o próprio; nunca excluir | ❌ |
 
-### Coleções do app mobile (inglês)
-
-| Coleção | Admin | Usuário autenticado | Público |
-|---------|-------|---------------------|---------|
-| `products` | ✅ tudo | leitura | ✅ leitura |
-| `categories` | ✅ tudo | leitura | ✅ leitura |
-| `settings` | ✅ tudo | leitura | ✅ leitura |
-| `coupons` | ✅ tudo | ✅ leitura | ❌ |
-| `orders` (global) | ✅ tudo | criar e ler o próprio | ❌ |
-| `users/{uid}` | ✅ tudo | ler/escrever o próprio | ❌ |
-| `users/{uid}/cart` | ✅ tudo | ler/escrever o próprio | ❌ |
-| `users/{uid}/favorites` | ✅ tudo | ler/escrever o próprio | ❌ |
-| `users/{uid}/orders` | ✅ tudo | criar e ler o próprio | ❌ |
+**Importante:** `pedidos` (espelho, usado pelo painel admin) permite `delete` para o admin — usado pelo botão "Excluir" na aba Arquivados de `pedidos-app.jsx`. `users/{uid}/orders` (subcoleção do app mobile) **bloqueia delete para todos**, inclusive admin — essa assimetria é intencional: o painel exclui o registro-espelho, não o histórico do cliente no app.
 
 ---
 
-## Por que o admin recebia permission-denied?
+## Por que o admin recebia permission-denied (histórico)
 
-A versão anterior exigia `email_verified == true`:
-
-```js
-// ❌ Causa permission-denied — contas com senha não são verificadas automaticamente
-function isAdmin() {
-  return request.auth != null
-      && request.auth.token.email == 'emporiominas00@gmail.com'
-      && request.auth.token.email_verified == true;  // ← PROBLEMA
-}
-```
-
-A versão corrigida remove essa exigência — o e-mail é suficiente para identificar o admin.
+A versão antiga exigia `email_verified == true`, mas contas com senha não são verificadas automaticamente — isso causava `permission-denied` mesmo para o e-mail correto do admin. Removido: o e-mail sozinho já identifica o admin (`isAdmin()` acima).
 
 ---
 
@@ -205,8 +167,8 @@ DB.getProdutos().then(d => console.log('✅ produtos:', d.length)).catch(e => co
 // Deve retornar array de categorias
 DB.getCategorias().then(d => console.log('✅ categorias:', d.length)).catch(e => console.error('❌', e.code))
 
-// Deve retornar objeto com vendas/pedidos/ticket
-DB.getMetricasHoje().then(d => console.log('✅ métricas:', d)).catch(e => console.error('❌', e.code))
+// Deve retornar array de pedidos
+DB.getPedidos().then(d => console.log('✅ pedidos:', d.length)).catch(e => console.error('❌', e.code))
 ```
 
 Se retornar sem erros de `permission-denied`, as regras estão corretas.
