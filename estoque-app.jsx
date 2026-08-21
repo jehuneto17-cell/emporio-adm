@@ -48,7 +48,6 @@ const STOCK_FILTERS = [
   { id: 'normal', label: 'Normal', dot: '#2e7d32' },
   { id: 'esgotados', label: 'Esgotados', dot: '#1c1c1a' },
 ];
-const STOCK_CATEGORIES = ['Todas as categorias', 'Queijos', 'Cafés', 'Doces', 'Embutidos', 'Bebidas', 'Conservas', 'Pães', 'Mel e Derivados'];
 
 // ─────────────────────────────────────────────────────────────────────────
 // Metric
@@ -238,6 +237,7 @@ function App() {
   const [toastMsg, setToastMsg] = useState(null);
   const [stockItems, setStockItems] = useState([]);
   const [categories, setCategories] = useState(['Todas as categorias']);
+  const [catNameById, setCatNameById] = useState({});
   const [loading, setLoading] = useState(true);
   useEffect(() => { if (!toastMsg) return; const id = setTimeout(() => setToastMsg(null), 2200); return () => clearTimeout(id); }, [toastMsg]);
   const toast = (m) => setToastMsg(m);
@@ -252,8 +252,11 @@ function App() {
     if (typeof DB === 'undefined') { setLoading(false); return; }
     Promise.all([DB.getProdutos(), DB.getCategorias()])
       .then(([produtos, cats]) => {
-        const items = produtos.map(produtoToStockItem);
+        const nameById = {};
+        cats.forEach(c => { nameById[c.id] = c.name; });
+        const items = produtos.map(produtoToStockItem).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
         setStockItems(items);
+        setCatNameById(nameById);
         setCategories(['Todas as categorias', ...cats.map(c => c.name).filter(Boolean)]);
         setLoading(false);
       })
@@ -266,14 +269,14 @@ function App() {
 
   const rows = useMemo(() => stockItems.filter(s => {
     const st = statusOf(s);
-    if (cat !== 'Todas as categorias' && s.cat !== cat) return false;
+    if (cat !== 'Todas as categorias' && (catNameById[s.cat] || s.cat) !== cat) return false;
     if (filter === 'todos') return true;
     if (filter === 'criticos') return st === 'esgotado' || st === 'baixo';
     if (filter === 'baixo') return st === 'baixo';
     if (filter === 'normal') return st === 'normal';
     if (filter === 'esgotados') return st === 'esgotado';
     return true;
-  }), [filter, cat, stockItems]);
+  }).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')), [filter, cat, stockItems, catNameById]);
 
   const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const paginated = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -286,7 +289,7 @@ function App() {
       const csvRows = [
         ['Nome', 'SKU', 'Categoria', 'Estoque atual', 'Estoque mínimo', 'Valor unitário', 'Valor total em estoque', 'Status'],
         ...rows.map(s => [
-          s.name, s.sku, s.cat, s.stock, s.min,
+          s.name, s.sku, catNameById[s.cat] || s.cat, s.stock, s.min,
           s.price.toFixed(2).replace('.', ','),
           (s.stock * s.price).toFixed(2).replace('.', ','),
           STATUS_META[statusOf(s)].label,
@@ -412,7 +415,7 @@ function App() {
                         </div>
                       </td>
                       <td style={{ padding: '13px 18px' }}><span className="mono" style={{ fontSize: 12.5, color: '#87726e' }}>{s.sku}</span></td>
-                      <td style={{ padding: '13px 18px', fontSize: 13, color: '#54433f', whiteSpace: 'nowrap' }}>{s.cat}</td>
+                      <td style={{ padding: '13px 18px', fontSize: 13, color: '#54433f', whiteSpace: 'nowrap' }}>{catNameById[s.cat] || s.cat}</td>
                       <td style={{ padding: '13px 18px', minWidth: 140 }}>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, justifyContent: 'center' }}>
                           <span className="num" style={{ fontSize: 15, fontWeight: 700, color: stockColor(st) }}>{s.stock}</span>
