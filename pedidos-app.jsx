@@ -375,13 +375,12 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (tab !== 'Arquivados') return;
-    if (typeof DB === 'undefined') return;
+    if (typeof DB === 'undefined') { setLoadingArchived(false); return; }
     setLoadingArchived(true);
     DB.getPedidosArquivados()
       .then(data => { setArchivedOrders(data); setLoadingArchived(false); })
       .catch(() => setLoadingArchived(false));
-  }, [tab]);
+  }, []);
 
   const tabs = ['Todos', ...ORDER_STATUSES, 'Arquivados'];
   const counts = useMemo(() => {

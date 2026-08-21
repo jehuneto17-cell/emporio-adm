@@ -55,7 +55,10 @@ function SharedSidebar({ active = 'produtos' }) {
         .collection('pedidos')
         .where('status', '==', 'Aguardando pagamento')
         .onSnapshot(
-          function(snap) { setNewOrders(snap.size); },
+          function(snap) {
+            var count = snap.docs.filter(function(d) { return !d.data().arquivado; }).length;
+            setNewOrders(count);
+          },
           function() { /* silent — badge fica em 0 */ }
         );
       return function() { unsubscribe(); };
