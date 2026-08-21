@@ -20,6 +20,7 @@ function produtoToStockItem(p) {
     name: p.name || '',
     sku: p.sku || '',
     cat: p.category || '',
+    subcat: p.subcategory || '',
     price: p.price || 0,
     stock: p.stock != null ? p.stock : 0,
     min: 5,
@@ -269,7 +270,11 @@ function App() {
 
   const rows = useMemo(() => stockItems.filter(s => {
     const st = statusOf(s);
-    if (cat !== 'Todas as categorias' && (catNameById[s.cat] || s.cat) !== cat) return false;
+    if (cat !== 'Todas as categorias') {
+      const catName = catNameById[s.cat] || s.cat;
+      const subcatName = catNameById[s.subcat] || s.subcat;
+      if (catName !== cat && subcatName !== cat) return false;
+    }
     if (filter === 'todos') return true;
     if (filter === 'criticos') return st === 'esgotado' || st === 'baixo';
     if (filter === 'baixo') return st === 'baixo';
@@ -289,7 +294,7 @@ function App() {
       const csvRows = [
         ['Nome', 'SKU', 'Categoria', 'Estoque atual', 'Estoque mínimo', 'Valor unitário', 'Valor total em estoque', 'Status'],
         ...rows.map(s => [
-          s.name, s.sku, catNameById[s.cat] || s.cat, s.stock, s.min,
+          s.name, s.sku, catNameById[s.subcat] || catNameById[s.cat] || s.cat, s.stock, s.min,
           s.price.toFixed(2).replace('.', ','),
           (s.stock * s.price).toFixed(2).replace('.', ','),
           STATUS_META[statusOf(s)].label,
@@ -415,7 +420,7 @@ function App() {
                         </div>
                       </td>
                       <td style={{ padding: '13px 18px' }}><span className="mono" style={{ fontSize: 12.5, color: '#87726e' }}>{s.sku}</span></td>
-                      <td style={{ padding: '13px 18px', fontSize: 13, color: '#54433f', whiteSpace: 'nowrap' }}>{catNameById[s.cat] || s.cat}</td>
+                      <td style={{ padding: '13px 18px', fontSize: 13, color: '#54433f', whiteSpace: 'nowrap' }}>{catNameById[s.subcat] || catNameById[s.cat] || s.cat}</td>
                       <td style={{ padding: '13px 18px', minWidth: 140 }}>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, justifyContent: 'center' }}>
                           <span className="num" style={{ fontSize: 15, fontWeight: 700, color: stockColor(st) }}>{s.stock}</span>
