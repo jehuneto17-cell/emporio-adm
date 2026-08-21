@@ -133,7 +133,9 @@
 
   async function getPedidos() {
     try {
-      var snap = await db.collection('pedidos').orderBy('createdAt', 'desc').limit(50).get();
+      // Sem orderBy no servidor: pedidos sem campo createdAt (ex: criados manualmente)
+      // seriam silenciosamente omitidos por um orderBy('createdAt'). Ordenamos em memória.
+      var snap = await db.collection('pedidos').limit(200).get();
       var mapped = snap.docs.map(function (doc) {
         var d = doc.data();
         return {
@@ -157,9 +159,14 @@
           products: Array.isArray(d.products) ? d.products : [],
           address: d.address || {},
           arquivado: !!d.arquivado,
+          _createdAtMs: d.createdAt && d.createdAt.seconds ? d.createdAt.seconds * 1000 : 0,
         };
       });
-      return mapped.filter(function(o) { return !o.arquivado; });
+      mapped.sort(function(a, b) { return b._createdAtMs - a._createdAtMs; });
+      return mapped.filter(function(o) { return !o.arquivado; }).slice(0, 50).map(function(o) {
+        delete o._createdAtMs;
+        return o;
+      });
     } catch (e) {
       console.warn('[DB.getPedidos]', e.code || e.message);
       return [];
@@ -168,7 +175,9 @@
 
   async function getPedidosArquivados() {
     try {
-      var snap = await db.collection('pedidos').orderBy('createdAt', 'desc').limit(50).get();
+      // Sem orderBy no servidor: pedidos sem campo createdAt seriam omitidos
+      // silenciosamente por um orderBy('createdAt'). Ordenamos em memória.
+      var snap = await db.collection('pedidos').limit(200).get();
       var mapped = snap.docs.map(function (doc) {
         var d = doc.data();
         return {
@@ -192,9 +201,14 @@
           products: Array.isArray(d.products) ? d.products : [],
           address: d.address || {},
           arquivado: !!d.arquivado,
+          _createdAtMs: d.createdAt && d.createdAt.seconds ? d.createdAt.seconds * 1000 : 0,
         };
       });
-      return mapped.filter(function(o) { return o.arquivado; });
+      mapped.sort(function(a, b) { return b._createdAtMs - a._createdAtMs; });
+      return mapped.filter(function(o) { return o.arquivado; }).slice(0, 50).map(function(o) {
+        delete o._createdAtMs;
+        return o;
+      });
     } catch (e) {
       console.warn('[DB.getPedidosArquivados]', e.code || e.message);
       return [];
