@@ -23,7 +23,7 @@ function produtoToStockItem(p) {
     subcat: p.subcategory || '',
     price: p.price || 0,
     stock: p.stock != null ? p.stock : 0,
-    min: 5,
+    min: p.minStock != null ? p.minStock : 5,
     cap: Math.max(30, (p.stock || 0) * 2),
     last: '—',
   };
