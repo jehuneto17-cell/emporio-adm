@@ -310,9 +310,9 @@ function Checkbox({ state, onClick }) {
 }
 
 // ─── Product table ───────────────────────────────────────────────────────────
-function StockCell({ stock }) {
+function StockCell({ stock, minStock }) {
   if (stock === 0) return <span style={{ color: 'var(--error)', fontWeight: 600 }}>0 un</span>;
-  if (stock <= 8) return <span style={{ color: 'var(--warning)', fontWeight: 600 }}>{stock} un</span>;
+  if (stock <= (minStock ?? 5)) return <span style={{ color: 'var(--warning)', fontWeight: 600 }}>{stock} un</span>;
   return <span style={{ color: 'var(--success)', fontWeight: 600 }}>{stock} un</span>;
 }
 
@@ -384,7 +384,7 @@ function ProductsTable({ rows, selected, toggleRow, toggleAll, onAction, catName
                 <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: 14 }}>{fmtBRL(p.price)}</div>
               )}
             </td>
-            <td style={td}><StockCell stock={p.stock} /></td>
+            <td style={td}><StockCell stock={p.stock} minStock={p.minStock} /></td>
             <td style={td}><StatusBadge status={p.stock === 0 ? 'Esgotado' : p.status} /></td>
             <td style={{ ...td, textAlign: 'right', paddingRight: 16 }}>
               <div style={{ display: 'inline-flex', gap: 2 }}>
@@ -631,7 +631,7 @@ function App() {
           {/* ROW 2 — Metrics calculadas do Firestore */}
           {(() => {
             const emPromocao   = produtos.filter(p => p.promo).length;
-            const estoqueBaixo = produtos.filter(p => p.stock > 0 && p.stock <= 10).length;
+            const estoqueBaixo = produtos.filter(p => p.stock > 0 && p.stock <= (p.minStock ?? 5)).length;
             const esgotados    = produtos.filter(p => p.stock === 0).length;
             const valorTotal   = produtos.reduce((s, p) => s + (p.promo || p.price) * p.stock, 0);
             return (
