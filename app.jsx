@@ -385,7 +385,7 @@ function ProductsTable({ rows, selected, toggleRow, toggleAll, onAction, catName
               )}
             </td>
             <td style={td}><StockCell stock={p.stock} /></td>
-            <td style={td}><StatusBadge status={p.status} /></td>
+            <td style={td}><StatusBadge status={p.stock === 0 ? 'Esgotado' : p.status} /></td>
             <td style={{ ...td, textAlign: 'right', paddingRight: 16 }}>
               <div style={{ display: 'inline-flex', gap: 2 }}>
                 <button className="btn-icon" title="Editar" onClick={() => onAction('edit', p)}><IconEdit size={16} /></button>
@@ -523,7 +523,8 @@ function App() {
       const catId = dbCats.find(c => c.name === cat)?.id;
       rows = rows.filter(r => r.category === catId);
     }
-    if (status !== 'Todos os status') rows = rows.filter(r => r.status === status);
+    if (status === 'Esgotado') rows = rows.filter(r => r.stock === 0);
+    else if (status !== 'Todos os status') rows = rows.filter(r => r.status === status);
     if (query.trim()) {
       const q = query.trim().toLowerCase();
       rows = rows.filter(r => r.name.toLowerCase().includes(q) || r.sku.toLowerCase().includes(q) || (catNameById[r.category] || '').toLowerCase().includes(q));
