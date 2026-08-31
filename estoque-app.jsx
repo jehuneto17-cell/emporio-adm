@@ -17,6 +17,7 @@ function produtoToStockItem(p) {
     id: p.id,
     initials: p.initials || (p.name || '').substring(0, 2).toUpperCase(),
     tint: p.tint || '#a85a32',
+    photo: (Array.isArray(p.images) && p.images[0]) || p.imageUrl || null,
     name: p.name || '',
     sku: p.sku || '',
     cat: p.category || '',
@@ -415,7 +416,13 @@ function App() {
                     <tr key={s.id} className="row stockrow" style={{ background: crit ? '#fff5f5' : '#fff', borderBottom: i < paginated.length - 1 ? '1px solid #f0ede9' : 'none' }}>
                       <td style={{ padding: '13px 18px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div className="photo" style={{ width: 40, height: 40, background: s.tint, fontSize: 13 }}>{s.initials}</div>
+                          {s.photo ? (
+                            <div className="photo" style={{ width: 40, height: 40, overflow: 'hidden', padding: 0 }}>
+                              <img src={s.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                            </div>
+                          ) : (
+                            <div className="photo" style={{ width: 40, height: 40, background: s.tint, fontSize: 13 }}>{s.initials}</div>
+                          )}
                           <div style={{ fontSize: 13.5, fontWeight: 600, color: '#1c1c1a', maxWidth: 200 }}>{s.name}</div>
                         </div>
                       </td>
