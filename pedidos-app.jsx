@@ -418,7 +418,8 @@ function App() {
   }, [orders, archivedOrders, tab, query, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const safePage = Math.min(page, totalPages);
+  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const changeStatus = (id, status) => {
     // Busca o uid do pedido para propagar o novo status de volta
@@ -568,18 +569,18 @@ function App() {
             </table>
 
             <div style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', borderTop: '1px solid var(--border-soft)' }}>
-              <div style={{ fontSize: 13, color: '#87726e', flex: 1 }}>Mostrando <span style={{ color: '#1c1c1a', fontWeight: 600 }}>{filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)}</span> de <span style={{ color: '#1c1c1a', fontWeight: 600 }}>{filtered.length}</span> resultados</div>
+              <div style={{ fontSize: 13, color: '#87726e', flex: 1 }}>Mostrando <span style={{ color: '#1c1c1a', fontWeight: 600 }}>{filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)}</span> de <span style={{ color: '#1c1c1a', fontWeight: 600 }}>{filtered.length}</span> resultados</div>
               <div style={{ display: 'inline-flex', gap: 4 }}>
-                <button className="pg-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}><IconChevronLeft size={16} /></button>
+                <button className="pg-btn" disabled={safePage === 1} onClick={() => setPage(p => p - 1)}><IconChevronLeft size={16} /></button>
                 {(() => {
                   const visiblePages = [];
-                  if (page <= totalPages) visiblePages.push(page);
-                  if (page + 1 <= totalPages) visiblePages.push(page + 1);
+                  if (safePage <= totalPages) visiblePages.push(safePage);
+                  if (safePage + 1 <= totalPages) visiblePages.push(safePage + 1);
                   return visiblePages.map(p => (
-                    <button key={p} className={`pg-btn ${p === page ? 'active' : ''}`} onClick={() => setPage(p)}>{p}</button>
+                    <button key={p} className={`pg-btn ${p === safePage ? 'active' : ''}`} onClick={() => setPage(p)}>{p}</button>
                   ));
                 })()}
-                <button className="pg-btn" disabled={page === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}><IconChevronRight size={16} /></button>
+                <button className="pg-btn" disabled={safePage === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}><IconChevronRight size={16} /></button>
               </div>
             </div>
           </div>

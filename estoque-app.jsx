@@ -285,7 +285,8 @@ function App() {
   }).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')), [filter, cat, stockItems, catNameById]);
 
   const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
-  const paginated = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const safePage = Math.min(page, totalPages);
+  const paginated = rows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const [exportingCSV, setExportingCSV] = useState(false);
   const exportarCSV = () => {
@@ -454,19 +455,19 @@ function App() {
 
             {/* footer */}
             <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border-soft)', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-              <div style={{ fontSize: 13, color: '#87726e' }}>Mostrando <strong style={{ color: '#54433f' }}>{rows.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, rows.length)}</strong> de <strong style={{ color: '#54433f' }}>{rows.length}</strong> resultados</div>
+              <div style={{ fontSize: 13, color: '#87726e' }}>Mostrando <strong style={{ color: '#54433f' }}>{rows.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, rows.length)}</strong> de <strong style={{ color: '#54433f' }}>{rows.length}</strong> resultados</div>
               <div style={{ flex: 1 }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <button className="pg-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}><IconChevronLeft size={16} /></button>
+                <button className="pg-btn" disabled={safePage === 1} onClick={() => setPage(p => p - 1)}><IconChevronLeft size={16} /></button>
                 {(() => {
                   const visiblePages = [];
-                  if (page <= totalPages) visiblePages.push(page);
-                  if (page + 1 <= totalPages) visiblePages.push(page + 1);
+                  if (safePage <= totalPages) visiblePages.push(safePage);
+                  if (safePage + 1 <= totalPages) visiblePages.push(safePage + 1);
                   return visiblePages.map(p => (
-                    <button key={p} className={`pg-btn ${p === page ? 'active' : ''}`} onClick={() => setPage(p)}>{p}</button>
+                    <button key={p} className={`pg-btn ${p === safePage ? 'active' : ''}`} onClick={() => setPage(p)}>{p}</button>
                   ));
                 })()}
-                <button className="pg-btn" disabled={page === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}><IconChevronRight size={16} /></button>
+                <button className="pg-btn" disabled={safePage === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}><IconChevronRight size={16} /></button>
               </div>
               <div style={{ flex: 1 }} />
             </div>
