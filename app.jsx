@@ -545,7 +545,8 @@ function App() {
   const totalCount = filtered.length;
   const PAGE_SIZE = 8;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const safePage = Math.min(page, totalPages);
+  const pageRows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const toggleRow = (id) => {
     setSelected(s => {
@@ -717,10 +718,10 @@ function App() {
 
             <div style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 16, borderTop: '1px solid var(--border-soft)' }}>
               <div style={{ fontSize: 13, color: 'var(--muted)' }}>
-                Exibindo <span style={{ color: 'var(--text)', fontWeight: 600 }}>{Math.min((page-1)*PAGE_SIZE+1, totalCount)}–{Math.min(page*PAGE_SIZE, totalCount)}</span> de <span style={{ color: 'var(--text)', fontWeight: 600 }}>{totalCount}</span> produtos
+                Exibindo <span style={{ color: 'var(--text)', fontWeight: 600 }}>{totalCount === 0 ? 0 : Math.min((safePage-1)*PAGE_SIZE+1, totalCount)}–{Math.min(safePage*PAGE_SIZE, totalCount)}</span> de <span style={{ color: 'var(--text)', fontWeight: 600 }}>{totalCount}</span> produtos
               </div>
               <div style={{ flex: 1 }} />
-              <Pagination page={page} setPage={setPage} totalPages={totalPages} />
+              <Pagination page={safePage} setPage={setPage} totalPages={totalPages} />
             </div>
           </div>
 
