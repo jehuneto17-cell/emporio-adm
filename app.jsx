@@ -333,12 +333,12 @@ function ProductsTable({ rows, selected, toggleRow, toggleAll, onAction, catName
       <colgroup>
         <col style={{ width: 48 }} />
         <col style={{ width: 72 }} />
-        <col />
+        <col style={{ width: 260 }} />
+        <col style={{ width: 190 }} />
         <col style={{ width: 150 }} />
         <col style={{ width: 130 }} />
-        <col style={{ width: 110 }} />
-        <col style={{ width: 130 }} />
-        <col style={{ width: 160 }} />
+        <col style={{ width: 150 }} />
+        <col style={{ width: 170 }} />
       </colgroup>
       <thead>
         <tr style={{ background: 'var(--th)', borderTop: '1px solid var(--border-soft)', borderBottom: '1px solid var(--border-soft)' }}>
